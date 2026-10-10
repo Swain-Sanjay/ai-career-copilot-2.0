@@ -44,6 +44,8 @@ function App() {
   const [resume, setResume] = useState(null);
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
 
   const openAnalyzer = () => {
     setPage("Resume Analyzer");
@@ -71,20 +73,58 @@ function App() {
     setNotice("");
   };
 
-  const handleContinue = () => {
-    if (!resume) {
-      setNotice("Upload your PDF resume to continue.");
-      return;
-    }
-    if (!jobDescription.trim()) {
-      setNotice("Add a job description to continue.");
-      return;
+ 
+const handleContinue = async () => {
+  if (!resume) {
+    setNotice("Upload your PDF resume to continue.");
+    return;
+  }
+
+  if (!jobDescription.trim()) {
+    setNotice("Add a job description to continue.");
+    return;
+  }
+
+  setLoading(true);
+  setNotice("");
+  setAnalysis(null);
+
+  try {
+    const formData = new FormData();
+    formData.append("resume", resume);
+    formData.append("job_description", jobDescription);
+    formData.append("include_ai_feedback", "false");
+
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/analyze",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        typeof data.detail === "string"
+          ? data.detail
+          : "Resume analysis failed."
+      );
     }
 
+    setAnalysis(data);
+    setNotice("Resume analysis completed successfully!");
+  } catch (error) {
     setNotice(
-      "Your inputs are ready. Backend integration is the next project milestone."
+      error.message ||
+        "Unable to connect to the backend. Check that FastAPI is running."
     );
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-[#09090f] text-slate-100">
@@ -452,13 +492,104 @@ function App() {
                   />
                 </label>
                 {notice && <p className="mt-3 text-xs leading-5 text-amber-300">{notice}</p>}
-                <button onClick={handleContinue} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-semibold hover:bg-violet-500">
-                  <Sparkles size={17} /> Prepare analysis
-                </button>
-                <p className="mt-4 text-xs leading-5 text-slate-500">This stage validates your inputs in the browser. We will connect the Python analysis endpoint in a later milestone.</p>
-              </div>
-            </section>
-          )}
+                
+               <button
+               onClick={handleContinue}
+               disabled={loading}
+               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-semibold hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+               <Sparkles size={17} />
+              {loading ? "Analyzing resume..." : "Prepare analysis"}
+              </button>
+               
+                {analysis && (
+  <div className="mt-6 rounded-xl border border-violet-500/30 bg-violet-500/5 p-4">
+    <h3 className="mb-4 text-lg font-semibold text-white">
+      Resume Analysis Results
+    </h3>
+
+    <p className="text-sm text-slate-400">Job Match Score</p>
+    <p className="mb-5 text-3xl font-bold text-violet-300">
+      {analysis.match_score}%
+    </p>
+
+    <h4 className="mb-2 font-semibold text-emerald-300">
+      Matched Skills
+    </h4>
+    
+{/* Skill Coverage */}
+<div className="mt-5">
+  <div className="mb-2 flex justify-between text-sm">
+    <span className="text-slate-300">Skill Coverage</span>
+    <span className="font-semibold text-violet-300">
+      {analysis.skill_coverage}%
+    </span>
+  </div>
+  <div className="h-2 overflow-hidden rounded-full bg-slate-700">
+    <div
+      className="h-full rounded-full bg-violet-500 transition-all"
+      style={{
+        width: `${Math.min(100, Math.max(0, Number(analysis.skill_coverage) || 0))}%`,
+      }}
+    />
+  </div>
+</div>
+
+{/* Resume Improvement Suggestions */}
+<div className="mt-6">
+  <h4 className="mb-3 font-semibold text-white">
+    Resume Improvement Suggestions
+  </h4>
+  {analysis.suggestions?.length ? (
+    <ul className="space-y-2">
+      {analysis.suggestions.map((suggestion, index) => (
+        <li
+          key={index}
+          className="rounded-lg bg-white/5 p-3 text-sm text-slate-300"
+        >
+          {suggestion}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p className="text-sm text-slate-400">
+      No suggestions available.
+    </p>
+  )}
+</div>
+
+{/* Interview Questions */}
+<div className="mt-6">
+  <h4 className="mb-3 font-semibold text-white">
+    Interview Preparation
+  </h4>
+  {analysis.interview_questions?.length ? (
+    <ol className="list-inside list-decimal space-y-2 text-sm text-slate-300">
+      {analysis.interview_questions.map((question, index) => (
+        <li key={index}>{question}</li>
+      ))}
+    </ol>
+  ) : (
+    <p className="text-sm text-slate-400">
+      No interview questions available.
+    </p>
+  )}
+</div>
+
+
+    <h4 className="mb-2 font-semibold text-amber-300">
+      Missing Skills
+    </h4>
+    <p className="text-sm text-slate-200">
+      {analysis.missing_skills?.join(", ") || "No missing skills found."}
+    </p>
+ 
+ </div>
+    )}
+    </div>
+  </section>
+)}
+
 
           {page === "Job Tracker" && (
             <section>

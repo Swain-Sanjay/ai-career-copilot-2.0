@@ -127,7 +127,7 @@ def analyze_resume(resume_text: str, job_description: str) -> dict:
         "matched_skills": matched,
         "missing_skills": missing,
         "text_similarity": round(text_similarity, 3),
-        "skill_coverage": round(skill_coverage, 3),
+       "skill_coverage": round(skill_coverage * 100, 1),
         "resume_word_count": len(resume_text.split()),
         "section_checks": sections,
         "suggestions": suggestions,

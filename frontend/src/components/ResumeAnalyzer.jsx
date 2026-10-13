@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Lightbulb,
   MessageSquareText,
+  Download,
 } from "lucide-react";
 
 function SkillTag({ skill, variant = "success" }) {
@@ -60,6 +61,78 @@ export default function ResumeAnalyzer({
   const questions = Array.isArray(analysis?.interview_questions)
     ? analysis.interview_questions
     : [];
+
+  const handleDownloadReport = () => {
+    if (!analysis) return;
+
+    const report = `AI CAREER COPILOT
+RESUME ANALYSIS REPORT
+Generated: ${new Date().toLocaleString()}
+
+========================================
+OVERALL RESULTS
+========================================
+Job Match Score: ${matchScore}%
+Skill Coverage: ${skillCoverage}%
+
+========================================
+MATCHED SKILLS
+========================================
+${
+  matchedSkills.length
+    ? matchedSkills.map((skill) => `- ${skill}`).join("\n")
+    : "No matched skills reported."
+}
+
+========================================
+SKILLS TO IMPROVE
+========================================
+${
+  missingSkills.length
+    ? missingSkills.map((skill) => `- ${skill}`).join("\n")
+    : "No missing skills reported."
+}
+
+========================================
+IMPROVEMENT SUGGESTIONS
+========================================
+${
+  suggestions.length
+    ? suggestions.map((item, index) => `${index + 1}. ${item}`).join("\n")
+    : "No suggestions available."
+}
+
+========================================
+INTERVIEW PREPARATION
+========================================
+${
+  questions.length
+    ? questions
+        .map((question, index) => `${index + 1}. ${question}`)
+        .join("\n")
+    : "No interview questions available."
+}
+
+========================================
+Note: This is an estimated resume-to-job match,
+not a guarantee of interview selection.
+`;
+
+    const blob = new Blob([report], {
+      type: "text/plain;charset=utf-8",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "resume-analysis-report.txt";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   return (
     <section className="mx-auto max-w-5xl space-y-7">
@@ -148,16 +221,29 @@ export default function ResumeAnalyzer({
       {/* Analysis results */}
       {analysis && (
         <section className="space-y-5">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.18em] text-violet-300">
-              YOUR REPORT
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold">
-              Resume Analysis Results
-            </h2>
-            <p className="mt-2 text-sm text-slate-400">
-              Review your results and identify areas to improve.
-            </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-violet-300">
+                YOUR REPORT
+              </p>
+
+              <h2 className="mt-2 text-2xl font-semibold">
+                Resume Analysis Results
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-400">
+                Review your results and identify areas to improve.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDownloadReport}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-sm font-semibold text-violet-200 transition hover:bg-violet-500/20"
+            >
+              <Download size={17} />
+              Download Report
+            </button>
           </div>
 
           {/* Score cards */}
@@ -177,7 +263,8 @@ export default function ResumeAnalyzer({
               </div>
 
               <p className="mt-2 text-xs leading-5 text-slate-500">
-                Estimated alignment between your resume and the job description.
+                Estimated alignment between your resume and the job
+                description.
               </p>
 
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
@@ -190,9 +277,7 @@ export default function ResumeAnalyzer({
 
             <article className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-[#11111a] p-5">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">
-                  Skill Coverage
-                </span>
+                <span className="text-sm text-slate-400">Skill Coverage</span>
                 <CheckCircle2 size={20} className="text-cyan-300" />
               </div>
 
@@ -221,6 +306,7 @@ export default function ResumeAnalyzer({
               <div className="rounded-xl bg-emerald-400/10 p-2.5 text-emerald-300">
                 <CheckCircle2 size={20} />
               </div>
+
               <div>
                 <h3 className="font-semibold">Matched Skills</h3>
                 <p className="mt-1 text-xs text-slate-500">
@@ -236,8 +322,8 @@ export default function ResumeAnalyzer({
                 ))
               ) : (
                 <p className="text-sm leading-6 text-slate-400">
-                  Matched skill names were not returned by the backend.
-                  Check the API response to connect this section.
+                  Matched skill names were not returned by the backend. Check
+                  the API response to connect this section.
                 </p>
               )}
             </div>
@@ -249,6 +335,7 @@ export default function ResumeAnalyzer({
               <div className="rounded-xl bg-amber-400/10 p-2.5 text-amber-300">
                 <AlertCircle size={20} />
               </div>
+
               <div>
                 <h3 className="font-semibold">Skills to Improve</h3>
                 <p className="mt-1 text-xs text-slate-500">
@@ -280,8 +367,11 @@ export default function ResumeAnalyzer({
               <div className="rounded-xl bg-violet-400/10 p-2.5 text-violet-300">
                 <Lightbulb size={20} />
               </div>
+
               <div>
-                <h3 className="font-semibold">Resume Improvement Suggestions</h3>
+                <h3 className="font-semibold">
+                  Resume Improvement Suggestions
+                </h3>
                 <p className="mt-1 text-xs text-slate-500">
                   Practical ways to strengthen your application
                 </p>
@@ -298,6 +388,7 @@ export default function ResumeAnalyzer({
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-xs font-semibold text-violet-300">
                       {index + 1}
                     </span>
+
                     <p className="text-sm leading-6 text-slate-300">
                       {suggestion}
                     </p>
@@ -317,6 +408,7 @@ export default function ResumeAnalyzer({
               <div className="rounded-xl bg-sky-400/10 p-2.5 text-sky-300">
                 <MessageSquareText size={20} />
               </div>
+
               <div>
                 <h3 className="font-semibold">Interview Preparation</h3>
                 <p className="mt-1 text-xs text-slate-500">
@@ -335,6 +427,7 @@ export default function ResumeAnalyzer({
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-400/10 text-xs font-semibold text-sky-300">
                       {index + 1}
                     </span>
+
                     <p className="text-sm leading-6 text-slate-300">
                       {question}
                     </p>
